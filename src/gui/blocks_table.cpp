@@ -1,7 +1,9 @@
 #include "blocks_table.h"
 
 #include <cassert>
+#include <iostream>
 #include <inttypes.h>
+
 
 const std::array<wxString, BlocksTable::NUM_OF_COLUMNS> BlocksTable::COLUMNS_LABELS{ 
   wxT("Number"), wxT("Hash"), wxT("Depth"), wxT("Timestamp"), wxT("Coinbase"), wxT("Nonce") };
@@ -39,6 +41,7 @@ wxString BlocksTable::GetValue(int row, int col)
       assert(false);
     }
   }
+
   return result;
 }
 
@@ -56,25 +59,41 @@ void BlocksTable::SetValue(int row, int col, const wxString& val)
     switch (col)
     {
     case 0:
-      assert(val.ToULong(&number));
+      if (!val.ToULong(&number))
+      {
+        std::cerr << "Could not convert " << val.ToStdString() << " to the ulong number\n";
+        return;
+      }
       _rows[row]._number = number;
       break;
     case 1:
       _rows[row]._hash = val;
       break;
     case 2:
-      assert(val.ToULong(&depth));
+      if (!val.ToULong(&depth))
+      {
+        std::cerr << "Could not convert " << val.ToStdString() << " to the ulong number\n";
+        return;
+      }
       _rows[row]._depth = depth;
       break;
     case 3:
-      assert(val.ToULong(&timestamp));
+      if (!val.ToULong(&timestamp))
+      {
+        std::cerr << "Could not convert " << val.ToStdString() << " to the ulong number\n";
+        return;
+      }
       _rows[row]._timestamp = timestamp;
       break;
     case 4:
       _rows[row]._coinbase = val;
       break;
     case 5:
-      assert(val.ToULong(&nonce));
+      if (!val.ToULong(&nonce))
+      {
+        std::cerr << "Could not convert " << val.ToStdString() << " to the ulong number\n";
+        return;
+      }
       _rows[row]._nonce = nonce;
       break;
     default:
@@ -101,7 +120,7 @@ void BlocksTable::Clear()
 }
 
 bool BlocksTable::InsertRows(size_t pos /*= 0*/, size_t numRows /*= 1*/)
-{
+{  
   if (numRows == 0 || pos >= _rows.size())
   {
     return false;
@@ -116,6 +135,7 @@ bool BlocksTable::InsertRows(size_t pos /*= 0*/, size_t numRows /*= 1*/)
   }
   catch (const std::exception& ex)
   {
+    std::cerr << "Exception: " << ex.what() << std::endl;
     return false;
   }
 
@@ -142,11 +162,11 @@ bool BlocksTable::AppendRows(size_t numRows /*= 1*/)
     {
       rows.push_back(BlockInfo());
     }
-
     _rows.swap(rows);
   }
   catch (const std::exception& ex)
   {
+    std::cerr << "Exception: " << ex.what() << std::endl;
     return false;
   }
 

@@ -49,8 +49,19 @@ public:
   {
     return _transactions[idx];
   }
+
+  void setTopBlockNumber(std::uint64_t blockNumber)
+  {
+    _topBlockNumber = blockNumber;
+  }
+
+  std::uint64_t getTopBlockNumber() const
+  {
+    return _topBlockNumber;
+  }
   
 private:
+  std::uint64_t _topBlockNumber = 0;
   std::vector<lk::ImmutableBlock> _blocks;
   std::vector<lk::Transaction> _transactions;
 };

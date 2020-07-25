@@ -1,6 +1,7 @@
 #include "txs_table.h"
 
 #include <cassert>
+#include <iostream>
 #include <inttypes.h>
 
 const std::array<wxString, TxsTable::NUM_OF_COLUMNS> TxsTable::COLUMNS_LABELS{
@@ -51,19 +52,6 @@ wxString TxsTable::GetValue(int row, int col)
   return result;
 }
 
-
-
-    unsigned _number = 0;
-    wxString _type;
-    wxString _from;
-    wxString _to;
-    wxString _value;
-    std::uint64_t _fee = 0;
-    std::uint32_t _timestamp = 0;
-    wxString _data;
-    bool _signature = false;
-
-
 void TxsTable::SetValue(int row, int col, const wxString& val)
 {
   unsigned long number = 0;
@@ -77,7 +65,11 @@ void TxsTable::SetValue(int row, int col, const wxString& val)
     switch (col)
     {
     case 0:
-      assert(val.ToULong(&number));
+      if (!val.ToULong(&number))
+      {
+        std::cerr << "Could not convert " << val.ToStdString() << " to the ulong number\n";
+        return;
+      }
       _rows[row]._number = number;
       break;
     case 1:
@@ -93,11 +85,19 @@ void TxsTable::SetValue(int row, int col, const wxString& val)
       _rows[row]._value = val;
       break;
     case 5:
-      assert(val.ToULong(&fee));
+      if (!val.ToULong(&fee))
+      {
+        std::cerr << "Could not convert " << val.ToStdString() << " to the ulong number\n";
+        return;
+      }
       _rows[row]._fee = fee;
       break;
     case 6:
-      assert(val.ToULong(&timestamp));
+      if (!val.ToULong(&timestamp))
+      {
+        std::cerr << "Could not convert " << val.ToStdString() << " to the ulong number\n";
+        return;
+      }
       _rows[row]._timestamp = timestamp;
       break;
     case 7:
@@ -128,7 +128,7 @@ void TxsTable::SetValue(int row, int col, const wxString& val)
 
 wxString TxsTable::GetColLabelValue(int col)
 {
-  return col < COLUMNS_LABELS.size() ? COLUMNS_LABELS[col] : "";
+  return col < static_cast<int>(COLUMNS_LABELS.size()) ? COLUMNS_LABELS[col] : "";
 }
 
 void TxsTable::Clear()
@@ -159,6 +159,7 @@ bool TxsTable::InsertRows(size_t pos /*= 0*/, size_t numRows /*= 1*/)
   }
   catch (const std::exception& ex)
   {
+    std::cerr << "Exception: " << ex.what() << std::endl;
     return false;
   }
 
@@ -190,6 +191,7 @@ bool TxsTable::AppendRows(size_t numRows /*= 1*/)
   }
   catch (const std::exception& ex)
   {
+    std::cerr << "Exception: " << ex.what() << std::endl;
     return false;
   }
 

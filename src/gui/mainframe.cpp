@@ -226,6 +226,7 @@ void MainFrame::connectToNode()
       SetStatusText(wxT("Available"), 2);
       _textBlockNumber->SetLabel(wxString::Format(wxT("%" PRIu64 ""), nodeInfo.top_block_number));
       _textBlockHash->SetLabel(wxString(nodeInfo.top_block_hash.toHex().c_str(), wxConvUTF8));
+      _dataModel.setTopBlockNumber(nodeInfo.top_block_number);
       loadDataModelFromNode();
     }
     else
@@ -236,6 +237,7 @@ void MainFrame::connectToNode()
       SetStatusText(wxT("Not Available."), 2);
       _textBlockNumber->SetLabel(wxT("<no number>"));
       _textBlockHash->SetLabel(wxT("<no hash>"));
+      _dataModel.setTopBlockNumber(0);
     }
   }
   catch (const std::exception& ex)
@@ -255,16 +257,13 @@ void MainFrame::loadDataModelFromNode()
 {
   _dataModel.Clear();
 
-  std::uint64_t blockNumber = 0;
-  bool rpcSuccess = true;
-  for (; rpcSuccess; blockNumber++)
+  std::uint64_t topBlockNumber = _dataModel.getTopBlockNumber();
+  for (std::uint64_t blockNumber = 0; blockNumber < topBlockNumber; blockNumber++)
   {
     // wxTextCtrl::operator<< has no overloading for uint64_t, so the intermediate string is used
     wxString tmp = wxString::Format(wxT("Loading block #%" PRIu64 "\n"), blockNumber);
     *_textLog << tmp;
 
-    // Load blocks one by one till the first exception.
-    // Currently I have no idea how to get number of blocks from the node.
     try
     {
       lk::ImmutableBlock block = _rpcClient->getBlock(blockNumber);
@@ -282,9 +281,9 @@ void MainFrame::loadDataModelFromNode()
         _dataModel.AppendTransaction(tx);
       }
     }
-    catch (const std::exception&)
+    catch (const std::exception& ex)
     {
-      rpcSuccess = false;
+      std::cerr << "An exception when loading the data model from the node: " << ex.what() << std::endl;
     }
   }
 
@@ -298,7 +297,14 @@ void MainFrame::updateBlocksTable()
   gridTable->Clear();
 
   std::size_t numberBlocks = _dataModel.GetNumberBlocks();
-  assert(gridTable->AppendRows(numberBlocks));
+  if (!gridTable->AppendRows(numberBlocks))
+  {
+    wxString tmp = wxString::Format(
+      wxT("An error when updateBlockTable. Could not append %" PRIu64 "blocks\n"), 
+      numberBlocks);
+    *_textLog << tmp;
+    return;
+  }
 
   for (std::size_t i = 0; i < numberBlocks; i++)
   {
@@ -317,7 +323,7 @@ void MainFrame::updateBlocksTable()
     gridTable->SetValue(i, 5, text);
   }
   
-  _blocksGrid->AutoSize();
+   _blocksGrid->AutoSize();
 }
 
 void MainFrame::updateTransactionsTable()
@@ -326,7 +332,14 @@ void MainFrame::updateTransactionsTable()
   gridTable->Clear();
 
   std::size_t numberTransactions = _dataModel.GetNumberTransactions();
-  assert(gridTable->AppendRows(numberTransactions));
+  if (!gridTable->AppendRows(numberTransactions))
+  {
+    wxString tmp = wxString::Format(
+      wxT("An error when updateTransactionTable. Could not append %" PRIu64 "transactions\n"), 
+      numberTransactions);
+    *_textLog << tmp;
+    return;
+  }
 
   for (std::size_t i = 0; i < numberTransactions; i++)
   {
