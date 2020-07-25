@@ -16,6 +16,12 @@ find_package(Backtrace)
 include_directories(SYSTEM ${Backtrace_INCLUDE_DIRS})
 include_directories(SYSTEM "/usr/lib/gcc/x86_64-linux-gnu/9/include/")
 
+# adding wxWidgets module
+# TO DO: need to be fixed! just now works only when package is set up before extending the CMAKE_MODULE_PATH list
+find_package(wxWidgets COMPONENTS core base REQUIRED)
+include( "${wxWidgets_USE_FILE}" )
+#========================
+
 # add conan package manager
 include(cmake/conan.cmake)
 conan_cmake_run(CONANFILE cmake/conanfile.txt BASIC_SETUP CMAKE_TARGETS BUILD missing)
