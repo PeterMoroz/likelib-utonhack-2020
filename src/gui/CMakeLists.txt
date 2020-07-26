@@ -6,6 +6,7 @@ add_executable(
     mainframe.cpp
     txs_app.cpp
     txs_table.cpp
+    update_thread.cpp
     blocks_table.cpp
     node_data_model.cpp
     )

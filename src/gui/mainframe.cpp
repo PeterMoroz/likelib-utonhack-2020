@@ -10,6 +10,7 @@
 #include "txs_table.h"
 
 #include <cassert>
+#include <chrono>
 #include <sstream>
 #include <inttypes.h>
 
@@ -19,13 +20,18 @@ constexpr int PROTOCOLS_CB = 102;
 constexpr int FILE_QUIT = wxID_EXIT;
 constexpr int HELP_ABOUT = wxID_ABOUT;
 
+
 BEGIN_EVENT_TABLE(MainFrame, wxFrame)
   EVT_MENU(FILE_QUIT, MainFrame::OnQuit)
   EVT_MENU(HELP_ABOUT, MainFrame::OnAbout)
   EVT_COMBOBOX(ENDPOINTS_CB, MainFrame::OnNodeEndpointChanged)
   EVT_COMBOBOX(PROTOCOLS_CB, MainFrame::OnProtocolChanged)
-  EVT_GRID_RANGE_SELECT(MainFrame::OnGridRangeSelect)
+  EVT_COMMAND(UPDATE_TABLES_ID, wxEVT_COMMAND_TEXT_UPDATED, MainFrame::OnUpdateTables)
+  EVT_COMMAND(SET_BLOCK_HASH_ID, wxEVT_COMMAND_TEXT_UPDATED, MainFrame::OnSetBlockHash)
+  EVT_COMMAND(SET_BLOCK_NUMBER_ID, wxEVT_COMMAND_TEXT_UPDATED, MainFrame::OnSetBlockNumber)
+  EVT_COMMAND(CONNECTION_STATUS_CHANGED_ID, wxEVT_COMMAND_TEXT_UPDATED, MainFrame::OnConnectionStatusChanged)
 END_EVENT_TABLE()
+
 
 
 MainFrame::MainFrame(const wxString& title)
@@ -135,7 +141,9 @@ MainFrame::MainFrame(const wxString& title)
   _endpoint = endpointsCB->GetStringSelection();
   _protocol = protocolsCB->GetStringSelection();
 
-  connectToNode();
+  SetStatusText(_endpoint, 0);
+  SetStatusText(_protocol, 1);
+  SetStatusText(wxT("Not connected"), 2);
 }
 
 void MainFrame::OnQuit(wxCommandEvent& event)
@@ -152,29 +160,58 @@ void MainFrame::OnAbout(wxCommandEvent& event)
 
 void MainFrame::OnNodeEndpointChanged(wxCommandEvent& event)
 {
-  *_textLog << wxT("Endpoint changed: ") << event.GetString() << wxT("\n");
+  wxMutexLocker lock(_endpointMutex);
   _endpoint = event.GetString();
-  connectToNode();
 }
 
 void MainFrame::OnProtocolChanged(wxCommandEvent& event)
 {
-  *_textLog << wxT("Protocol changed: ") << event.GetString() << wxT("\n");
+  wxMutexLocker lock(_protocolMutex);
   _protocol = event.GetString();
-  connectToNode();
 }
 
-void MainFrame::OnGridRangeSelect(wxGridRangeSelectEvent& event)
+void MainFrame::OnUpdateTables(wxCommandEvent& event)
 {
-  wxGrid* grid = static_cast<wxGrid*>(event.GetEventObject());
-  if (grid == _blocksGrid)
-  {
-    if (event.Selecting())
-    {
-      int row = grid->GetGridCursorRow();
-      *_textLog << wxT("Selected row: ") << row << wxT("\n");
-    }
-  }
+  updateBlocksTable();
+  updateTransactionsTable();
+}
+
+void MainFrame::OnSetBlockHash(wxCommandEvent& event)
+{
+  assert(_textBlockNumber);
+  _textBlockNumber->SetLabel(event.GetString());
+}
+
+void MainFrame::OnSetBlockNumber(wxCommandEvent& event)
+{
+  assert(_textBlockHash);
+  _textBlockHash->SetLabel(event.GetString());
+}
+
+void MainFrame::OnConnectionStatusChanged(wxCommandEvent& event)
+{
+  wxString text = event.GetString();
+
+  wxString rest, part;
+  part = text.BeforeFirst(wxUniChar('|'), &rest);
+  text = rest;
+  SetStatusText(part, 0);
+
+  part = text.BeforeFirst(wxUniChar('|'), &rest);
+  SetStatusText(part, 1);
+  SetStatusText(rest, 2);
+}
+
+wxString MainFrame::getEndpoint()
+{
+  wxMutexLocker lock(_endpointMutex);
+  return _endpoint;
+}
+
+wxString MainFrame::getProtocol()
+{ 
+  wxMutexLocker lock(_protocolMutex);
+  return _protocol; 
 }
 
 void MainFrame::loadEndpointsFromFile(const wxString& filename)
@@ -192,6 +229,7 @@ void MainFrame::loadEndpointsFromFile(const wxString& filename)
   txtFile.Close();
 }
 
+/*
 void MainFrame::connectToNode()
 {
   SetStatusText(_endpoint, 0);
@@ -252,7 +290,9 @@ void MainFrame::connectToNode()
   }
 
 }
+*/
 
+/*
 void MainFrame::loadDataModelFromNode()
 {
   _dataModel.Clear();
@@ -290,6 +330,7 @@ void MainFrame::loadDataModelFromNode()
   updateBlocksTable();
   updateTransactionsTable();
 }
+*/
 
 void MainFrame::updateBlocksTable()
 {
